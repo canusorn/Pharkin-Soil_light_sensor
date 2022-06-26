@@ -19,6 +19,7 @@
   VCC  <-> 5V
   GND  <-> GND
   A0   <-> A0
+  
 */
 
 // Fill-in information from your Blynk Template here
@@ -63,6 +64,7 @@ uint16_t lux, moisture;
 bool relayOn = false;            // flag relay on
 uint8_t cw, ccw;                 // timer to control motor
 uint8_t light_state, mois_state; // state
+uint8_t timer;
 
 void setup()
 {
@@ -86,14 +88,21 @@ void loop()
   BlynkEdgent.run();
 
   unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis >= 1000)
-  { //ทำงานทุก 1 วินาที
+  if (currentMillis - previousMillis >= 100)
+  { //ทำงานทุก 0.1 วินาที เพื่อหาค่าเฉลี่ย 10 ค่า
     previousMillis = currentMillis;
+    lux += LightSensor.GetLightIntensity();
+    moisture += map(analogRead(A0), 1024, 500, 0, 100);
+    timer++;
+  }
 
-    lux = LightSensor.GetLightIntensity();
+  if (timer >= 10) //ทำงานทุก 1 วินาที
+  {
+    // ค่าเฉลี่ยแสง
+    lux = lux / timer;
     Serial.print("Light: " + String(lux));
-
-    moisture = map(analogRead(A0), 1024, 500, 0, 100);
+    // ค่าเฉลี่ยความชื้น
+    moisture = moisture / timer;
     Serial.println("\tSoli Moisture : " + (String)moisture);
 
     // update blynk
@@ -151,7 +160,7 @@ void loop()
     {
       mois_state = 0;
       ccw = 30;
-      Serial.println("Moisture in "  + String(MIN_MOISTURE) + '-'  + String(MAX_MOISTURE) + " -> motor : CounterClockwise  Time:" + String(ccw) + " sec");
+      Serial.println("Moisture in " + String(MIN_MOISTURE) + '-' + String(MAX_MOISTURE) + " -> motor : CounterClockwise  Time:" + String(ccw) + " sec");
     }
 
     // motor control
@@ -169,6 +178,11 @@ void loop()
     {
       motorStop();
     }
+
+    // clear value
+    timer = 0;
+    lux = 0;
+    moisture = 0;
   }
 }
 
@@ -183,7 +197,6 @@ void motorCW() // motor : Clockwise
 
 void motorCCW() // motor : Counterclockwise
 {
-  Serial.println("motor : Counterclockwise");
   digitalWrite(MOTOR1, LOW);
   digitalWrite(MOTOR2, HIGH);
   Blynk.virtualWrite(V3, 0);
@@ -192,7 +205,6 @@ void motorCCW() // motor : Counterclockwise
 
 void motorStop()
 {
-  Serial.println("motor : Stop");
   digitalWrite(MOTOR1, LOW);
   digitalWrite(MOTOR2, LOW);
   Blynk.virtualWrite(V3, 0);
