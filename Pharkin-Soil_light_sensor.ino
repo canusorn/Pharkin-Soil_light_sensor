@@ -51,6 +51,12 @@ BH1750FVI LightSensor(BH1750FVI::k_DevModeContLowRes);
 unsigned long previousMillis = 0;
 uint16_t lux, moisture;
 bool relayOn = false; // flag relay on
+uint8_t cw, ccw;      // timer to control motor
+
+/*
+0
+*/
+uint8_t light_state;
 
 void setup()
 {
@@ -97,11 +103,41 @@ void loop()
     }
 
     // เงื่อนไขจากแสง
-    if (lux > MAX_LUX)
+    if (light_state == 0 && lux > MAX_LUX && cw == 0 && ccw == 0) //ตรวจจับได้ว่าค่าความเข้มแสงมีค่าเกินกว่าช่วงที่กำหนดไว้ให้ทำการสั่งการให้มอเตอร์ตัวหนึ่งหมุนตามเข็มนาฬิกาและมอเตอร์อีกตัวหนึ่งหมุนทวนเข็มนาฬิกาเป็นเวลา 20 วินาที
     {
+      light_state = 1;
+      cw = 20;
     }
-    else if (lux < MIN_LUX)
+    else if (light_state == 1 && lux < MIN_LUX && cw == 0 && ccw == 0) // ต่อมาหากเซนเซอร์ตรวจจับความเข้มแสงตรวจจับได้ว่าค่าความเข้มแสงมีค่าต่ำกว่าช่วงที่กำหนดไว้ให้ทำการสั่งการให้มอเตอร์ทั้งสอง 2 ตัวหมุนต่อในทิศทางเดิมจากตำแหน่งเดิมเป็นเวลาอีก 20 วินาที
     {
+      light_state = 2;
+      cw = 20;
+    }
+    else if (light_state == 2 && lux > MAX_LUX && cw == 0 && ccw == 0) // ต่อมาหากเซนเซอร์ตรวจจับความเข้มแสงสามารถตรวจจับได้ว่าค่าความเข้มแสงนั้นมีค่ามากกว่าช่วงที่กำหนดอีกครั้งให้ทำการสั่งการให้มอเตอร์หมุนทวนเข็มนาฬิกาเป็นเวลา 30 วินาที
+    {
+      light_state = 3;
+      ccw = 30;
+    }
+    else if (light_state == 3 && lux < MIN_LUX && cw == 0 && ccw == 0) // ต่อมาหากเซนเซอร์ตรวจจับความเข้มแสงตรวจจับได้ว่าค่าความเข้มแสงมีค่าต่ำกว่าช่วงที่กำหนดไว้ให้ทำการสั่งการให้มอเตอร์ทั้งสอง 2 ตัวหมุนต่อในทิศทางเดิมจากตำแหน่งเดิมเป็นเวลาอีก 20 วินาที
+    {
+      light_state = 0;
+      ccw = 20;
+    }
+
+    // motor control
+    if (cw)
+    {
+      motorCW();
+      cw--;
+    }
+    else if (ccw)
+    {
+      motorCCW();
+      ccw--;
+    }
+    else
+    {
+      motorStop();
     }
   }
 }
