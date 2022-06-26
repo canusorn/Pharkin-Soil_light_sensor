@@ -23,8 +23,8 @@
 */
 
 // Fill-in information from your Blynk Template here
-#define BLYNK_TEMPLATE_ID "TMPLBPycYavo" // จากหน้า blynk template
-#define BLYNK_DEVICE_NAME "soil light"   // จากหน้า blynk template
+#define BLYNK_TEMPLATE_ID "TMPLfHXtxAbw" // จากหน้า blynk template
+#define BLYNK_DEVICE_NAME "Soil Moisture and Light sensor"   // จากหน้า blynk template
 
 #define BLYNK_FIRMWARE_VERSION "0.0.1"
 
@@ -60,7 +60,8 @@
 BH1750FVI LightSensor(BH1750FVI::k_DevModeContLowRes);
 
 unsigned long previousMillis = 0;
-uint16_t lux, moisture;
+uint32_t lux;
+uint16_t moisture;
 bool relayOn = false;            // flag relay on
 uint8_t cw, ccw;                 // timer to control motor
 uint8_t light_state, mois_state; // state
