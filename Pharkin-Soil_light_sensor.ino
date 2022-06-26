@@ -60,13 +60,9 @@ BH1750FVI LightSensor(BH1750FVI::k_DevModeContLowRes);
 
 unsigned long previousMillis = 0;
 uint16_t lux, moisture;
-bool relayOn = false; // flag relay on
-uint8_t cw, ccw;      // timer to control motor
-
-/*
-0
-*/
-uint8_t light_state;
+bool relayOn = false;            // flag relay on
+uint8_t cw, ccw;                 // timer to control motor
+uint8_t light_state, mois_state; // state
 
 void setup()
 {
@@ -104,39 +100,58 @@ void loop()
     Blynk.virtualWrite(V0, moisture);
     Blynk.virtualWrite(V1, lux);
 
-    // เงื่อนไขจากความชื้น
+    //ข้อ1 เงื่อนไขจากความชื้น
     if (moisture <= MIN_MOISTURE)
     {
       digitalWrite(RELAY, HIGH);
       relayOn = true;
+      Serial.println("Relay On");
     }
     else if (moisture > MAX_MOISTURE)
     {
       digitalWrite(RELAY, LOW);
       relayOn = false;
+      Serial.println("Relay Off");
     }
     Blynk.virtualWrite(V2, relayOn);
 
-    // เงื่อนไขจากแสง
+    //ข้อ2 เงื่อนไขจากแสง
     if (light_state == 0 && lux > MAX_LUX && cw == 0 && ccw == 0) //ตรวจจับได้ว่าค่าความเข้มแสงมีค่าเกินกว่าช่วงที่กำหนดไว้ให้ทำการสั่งการให้มอเตอร์ตัวหนึ่งหมุนตามเข็มนาฬิกาและมอเตอร์อีกตัวหนึ่งหมุนทวนเข็มนาฬิกาเป็นเวลา 20 วินาที
     {
       light_state = 1;
       cw = 20;
+      Serial.println("Light > " + String(MAX_LUX) + " -> motor : Clockwise  Time:" + String(cw) + " sec");
     }
     else if (light_state == 1 && lux < MIN_LUX && cw == 0 && ccw == 0) // ต่อมาหากเซนเซอร์ตรวจจับความเข้มแสงตรวจจับได้ว่าค่าความเข้มแสงมีค่าต่ำกว่าช่วงที่กำหนดไว้ให้ทำการสั่งการให้มอเตอร์ทั้งสอง 2 ตัวหมุนต่อในทิศทางเดิมจากตำแหน่งเดิมเป็นเวลาอีก 20 วินาที
     {
       light_state = 2;
       cw = 20;
+      Serial.println("Light < " + String(MIN_LUX) + " -> motor : Clockwise  Time:" + String(cw) + " sec");
     }
     else if (light_state == 2 && lux > MAX_LUX && cw == 0 && ccw == 0) // ต่อมาหากเซนเซอร์ตรวจจับความเข้มแสงสามารถตรวจจับได้ว่าค่าความเข้มแสงนั้นมีค่ามากกว่าช่วงที่กำหนดอีกครั้งให้ทำการสั่งการให้มอเตอร์หมุนทวนเข็มนาฬิกาเป็นเวลา 30 วินาที
     {
       light_state = 3;
       ccw = 30;
+      Serial.println("Light > " + String(MAX_LUX) + " -> motor : CounterClockwise  Time:" + String(ccw) + " sec");
     }
     else if (light_state == 3 && lux < MIN_LUX && cw == 0 && ccw == 0) // ต่อมาหากเซนเซอร์ตรวจจับความเข้มแสงตรวจจับได้ว่าค่าความเข้มแสงมีค่าต่ำกว่าช่วงที่กำหนดไว้ให้ทำการสั่งการให้มอเตอร์ทั้งสอง 2 ตัวหมุนต่อในทิศทางเดิมจากตำแหน่งเดิมเป็นเวลาอีก 20 วินาที
     {
       light_state = 0;
       ccw = 20;
+      Serial.println("Light < " + String(MIN_LUX) + " -> motor : CounterClockwise  Time:" + String(ccw) + " sec");
+    }
+    //ข้อ3 เงือนไขจากความชื้น จะทำงานเมื่อไม่เข้าเงือนไขในข้อ2
+    else if (mois_state == 0 && moisture > MAX_MOISTURE && cw == 0 && ccw == 0) // หากเซนเซอร์ตรวจจับความชื้นภายในดินตวจจับได้ว่าค่าความชื้นภายในดินมีค่าเกินกว่าที่กำหนดให้ทำการสั่งการให้มอเตอร์ตัวหนึ่งหมุนตามเข็มนาฬิกา เป็นเวลา 20 วินาที
+    {
+      mois_state = 1;
+      cw = 20;
+      Serial.println("Moisture > " + String(MAX_MOISTURE) + " -> motor : Clockwise  Time:" + String(cw) + " sec");
+    }
+    else if (mois_state == 1 && moisture <= MAX_MOISTURE && moisture >= MIN_MOISTURE && cw == 0 && ccw == 0) // ต่อมาหากเซนเซอร์ตรวจจับความชื้นภายในดินตรวจจับได้ว่าค่าความชื้นภายในดินกลับมาอยู่ในช่วงที่กำหนดไว้ ให้ทำการสั่งการให้มอเตอร์หมุนทวนเข็มนาฬิกา เป็นเวลา 30 วินาที
+    {
+      mois_state = 0;
+      ccw = 30;
+      Serial.println("Moisture in "  + String(MIN_MOISTURE) + '-'  + String(MAX_MOISTURE) + " -> motor : CounterClockwise  Time:" + String(ccw) + " sec");
     }
 
     // motor control
@@ -157,16 +172,18 @@ void loop()
   }
 }
 
-void motorCW()
+void motorCW() // motor : Clockwise
 {
+
   digitalWrite(MOTOR1, HIGH);
   digitalWrite(MOTOR2, LOW);
   Blynk.virtualWrite(V3, 1);
   Blynk.virtualWrite(V4, 0);
 }
 
-void motorCCW()
+void motorCCW() // motor : Counterclockwise
 {
+  Serial.println("motor : Counterclockwise");
   digitalWrite(MOTOR1, LOW);
   digitalWrite(MOTOR2, HIGH);
   Blynk.virtualWrite(V3, 0);
@@ -175,6 +192,7 @@ void motorCCW()
 
 void motorStop()
 {
+  Serial.println("motor : Stop");
   digitalWrite(MOTOR1, LOW);
   digitalWrite(MOTOR2, LOW);
   Blynk.virtualWrite(V3, 0);
