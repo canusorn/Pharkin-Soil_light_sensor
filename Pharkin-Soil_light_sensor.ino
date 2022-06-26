@@ -1,4 +1,14 @@
 /*
+
+  blynk virtual pin
+
+  V0 - moisture ความชื้น
+  V1 - light แสง
+  V2 - relay รีเลย์ปั้ม
+  V3 - cw มอเตอร์หมุนตามเข็ม
+  V4 - ccw มอเตอร์หมุนทวนเข็ม
+
+
   light sensor:
   VCC  <-> 3V3
   GND  <-> GND
@@ -90,6 +100,10 @@ void loop()
     moisture = map(analogRead(A0), 1024, 500, 0, 100);
     Serial.println("\tSoli Moisture : " + (String)moisture);
 
+    // update blynk
+    Blynk.virtualWrite(V0, moisture);
+    Blynk.virtualWrite(V1, lux);
+
     // เงื่อนไขจากความชื้น
     if (moisture <= MIN_MOISTURE)
     {
@@ -101,6 +115,7 @@ void loop()
       digitalWrite(RELAY, LOW);
       relayOn = false;
     }
+    Blynk.virtualWrite(V2, relayOn);
 
     // เงื่อนไขจากแสง
     if (light_state == 0 && lux > MAX_LUX && cw == 0 && ccw == 0) //ตรวจจับได้ว่าค่าความเข้มแสงมีค่าเกินกว่าช่วงที่กำหนดไว้ให้ทำการสั่งการให้มอเตอร์ตัวหนึ่งหมุนตามเข็มนาฬิกาและมอเตอร์อีกตัวหนึ่งหมุนทวนเข็มนาฬิกาเป็นเวลา 20 วินาที
@@ -146,16 +161,22 @@ void motorCW()
 {
   digitalWrite(MOTOR1, HIGH);
   digitalWrite(MOTOR2, LOW);
+  Blynk.virtualWrite(V3, 1);
+  Blynk.virtualWrite(V4, 0);
 }
 
 void motorCCW()
 {
   digitalWrite(MOTOR1, LOW);
   digitalWrite(MOTOR2, HIGH);
+  Blynk.virtualWrite(V3, 0);
+  Blynk.virtualWrite(V4, 1);
 }
 
 void motorStop()
 {
   digitalWrite(MOTOR1, LOW);
   digitalWrite(MOTOR2, LOW);
+  Blynk.virtualWrite(V3, 0);
+  Blynk.virtualWrite(V4, 0);
 }
