@@ -7,7 +7,7 @@
   V2 - relay รีเลย์ปั้ม
   V3 - cw มอเตอร์หมุนตามเข็ม
   V4 - ccw มอเตอร์หมุนทวนเข็ม
-
+  V5 - มอเตอร์หมุน(ทั้งสองทาง)
 
   light sensor:
   VCC  <-> 3V3
@@ -19,12 +19,12 @@
   VCC  <-> 5V
   GND  <-> GND
   A0   <-> A0
-  
+
 */
 
 // Fill-in information from your Blynk Template here
-#define BLYNK_TEMPLATE_ID "TMPLfHXtxAbw" // จากหน้า blynk template
-#define BLYNK_DEVICE_NAME "Soil Moisture and Light sensor"   // จากหน้า blynk template
+#define BLYNK_TEMPLATE_ID "TMPLfHXtxAbw"                   // จากหน้า blynk template
+#define BLYNK_DEVICE_NAME "Soil Moisture and Light sensor" // จากหน้า blynk template
 
 #define BLYNK_FIRMWARE_VERSION "0.0.1"
 
@@ -63,6 +63,7 @@ unsigned long previousMillis = 0;
 uint32_t lux;
 uint16_t moisture;
 bool relayOn = false;            // flag relay on
+bool motorState = false;         // flag motor state
 uint8_t cw, ccw;                 // timer to control motor
 uint8_t light_state, mois_state; // state
 uint8_t timer;
@@ -111,13 +112,13 @@ void loop()
     Blynk.virtualWrite(V1, lux);
 
     //ข้อ1 เงื่อนไขจากความชื้น
-    if (moisture <= MIN_MOISTURE)
+    if (moisture <= MIN_MOISTURE && !relayOn)
     {
       digitalWrite(RELAY, HIGH);
       relayOn = true;
       Serial.println("Relay On");
     }
-    else if (moisture > MAX_MOISTURE)
+    else if (moisture > MAX_MOISTURE && relayOn)
     {
       digitalWrite(RELAY, LOW);
       relayOn = false;
@@ -169,15 +170,18 @@ void loop()
     {
       motorCW();
       cw--;
+      motorState = true;
     }
     else if (ccw)
     {
       motorCCW();
       ccw--;
+      motorState = true;
     }
     else
     {
       motorStop();
+      motorState = false;
     }
 
     // clear value
@@ -194,6 +198,7 @@ void motorCW() // motor : Clockwise
   digitalWrite(MOTOR2, LOW);
   Blynk.virtualWrite(V3, 1);
   Blynk.virtualWrite(V4, 0);
+  Blynk.virtualWrite(V5, 1);
 }
 
 void motorCCW() // motor : Counterclockwise
@@ -202,12 +207,16 @@ void motorCCW() // motor : Counterclockwise
   digitalWrite(MOTOR2, HIGH);
   Blynk.virtualWrite(V3, 0);
   Blynk.virtualWrite(V4, 1);
+  Blynk.virtualWrite(V5, 1);
 }
 
 void motorStop()
 {
+  if (motorState)
+    Serial.println("motor : Stop");
   digitalWrite(MOTOR1, LOW);
   digitalWrite(MOTOR2, LOW);
   Blynk.virtualWrite(V3, 0);
   Blynk.virtualWrite(V4, 0);
+  Blynk.virtualWrite(V5, 0);
 }
