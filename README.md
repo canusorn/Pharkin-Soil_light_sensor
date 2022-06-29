@@ -1,5 +1,39 @@
 # Pharkin-Soil_light_sensor
 
+  blynk virtual pin
+  V0 - moisture ความชื้น
+  V1 - light แสง
+  V2 - relay รีเลย์ปั้ม
+  V3 - cw มอเตอร์หมุนตามเข็ม
+  V4 - ccw มอเตอร์หมุนทวนเข็ม
+  V5 - มอเตอร์หมุน(ทั้งสองทาง)
+
+  การต่อวงจร
+
+  light sensor:
+  VCC  <-> 3V3
+  GND  <-> GND
+  SDA  <-> D2
+  SCL  <-> D1
+
+  soil sensor
+  VCC  <-> 5V(VU,VUSB) *5V บนnodemcu v3 ใช้งานไม่ได้
+  GND  <-> GND
+  A0   <-> A0
+
+  motor drive
+  IN1,IN2  <-> D6 
+  IN3,IN4  <-> D7
+  +12v,+5v <-> 5V(VU,VUSB) หรือแหล่งจ่ายไฟอื่น
+  GND  <-> GND
+  motor out สามารถสลับสายได้ถ้าตอ้งการให้หมุนเปลี่ยนทิศ
+
+  relay
+  vcc <-> 5V(VU,VUSB)
+  In1 <-> D5
+  GND  <-> GND
+
+
 1. GY-302 เซนเซอร์วัดความเข้มแสง Ambient Light lux Sensor Module (BH1750FVI) เซนเซอร์แสง 
 2. เซนเซอร์วัดความชื้นในดิน Soil Moisture Sensor Module v1 
 3. รีเลย์แบบ 1 ช่อง 5V relay module optocoupler isolation high and low level trigger MCU red board
@@ -8,8 +42,7 @@
 6. NodeMcu Node MCU Base ESP8266 Testing DIY Breadboard Basics Tester suitable for NodeMcu V3 
 7.  แอพพลิเคชัน Blynk 
 
-ซึ่งมีหลักการทำงานคือ 
-1.
+ซึ่งมีหลักการทำงานคือ
 1.1) หากเซนเซอร์ตรวจจับความชื้นภายในดินตรวจจับได้ว่าค่าความชื้นภายในดินมีค่าต่ำกว่าช่วงความชื้นที่กำหนดไว้ให้สั่งการไปยังรีเลย์ให้ทำการปล่อยไฟฟ้าให้กับเครื่องปั๊มน้ำทำการปั๊มน้ำ 
 1.2) และหากเซนเซอร์ตรวจจับได้ว่าค่าความชื้นภายในดินมีค่าเกินกว่าช่วงที่กำหนดให้สั่งการไปให้รีเลย์ให้หยุดการจ่ายไฟให้กับเครื่องปั๊มน้ำ 
 1.3) และหากค่าความชื้นภายในดินที่ตรวจจับได้อยู่ในช่วงที่กำหนดไว้ไม่ต้องสั่งการใดๆ 
