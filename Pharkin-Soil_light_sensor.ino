@@ -22,7 +22,7 @@
 
   motor drive
   D6  <-> IN1,IN2
-  D7  <-> IN2,IN4
+  D7  <-> IN3,IN4
 
   relay
   D5  <-> in relay
