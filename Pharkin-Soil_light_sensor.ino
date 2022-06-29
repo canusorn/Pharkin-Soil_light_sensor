@@ -20,6 +20,12 @@
   GND  <-> GND
   A0   <-> A0
 
+  motor drive
+  D6  <-> IN1,IN2
+  D7  <-> IN2,IN4
+
+  relay
+  D5  <-> in relay
 */
 
 // Fill-in information from your Blynk Template here
@@ -43,8 +49,8 @@
 #define ANALOG_WATER 500    // ค่าเมื่ออยู่ในน้ำ
 #define ANALOG_NOWATER 1024 // ค่าเมื่อไม่อยู่ในน้ำ
 // ขาต่อใช้งาน
-#define MOTOR1 D3 // ขามอเตอร์ IN1 IN3
-#define MOTOR2 D4 // ขามอเตอร์ IN2 IN4
+#define MOTOR1 D6 // ขามอเตอร์ IN1 IN3
+#define MOTOR2 D7 // ขามอเตอร์ IN2 IN4
 #define RELAY D5  // ขาต่อรีเลย์คุมปั้มน้ำ
 
 // Uncomment your board, or configure a custom board in Settings.h
@@ -90,22 +96,17 @@ void loop()
   BlynkEdgent.run();
 
   unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis >= 100)
-  { //ทำงานทุก 0.1 วินาที เพื่อหาค่าเฉลี่ย 10 ค่า
+  if (currentMillis - previousMillis >= 1000)
+  { //ทำงานทุก 1 วินาที
     previousMillis = currentMillis;
-    lux += LightSensor.GetLightIntensity();
-    moisture += map(analogRead(A0), 1024, 500, 0, 100);
-    timer++;
-  }
 
-  if (timer >= 10) //ทำงานทุก 1 วินาที
-  {
-    // ค่าเฉลี่ยแสง
-    lux = lux / timer;
+    // ค่าแสง
+    lux = LightSensor.GetLightIntensity();;
     Serial.print("Light: " + String(lux));
-    // ค่าเฉลี่ยความชื้น
-    moisture = moisture / timer;
+    // ค่าความชื้น
+    moisture = map(analogRead(A0), 1024, 500, 0, 100);
     Serial.println("\tSoli Moisture : " + (String)moisture);
+    Serial.println("Moter timer\tCW:" + String(cw) + " CCW:" + String(ccw));
 
     // update blynk
     Blynk.virtualWrite(V0, moisture);
@@ -152,7 +153,7 @@ void loop()
       Serial.println("Light < " + String(MIN_LUX) + " -> motor : CounterClockwise  Time:" + String(ccw) + " sec");
     }
     //ข้อ3 เงือนไขจากความชื้น จะทำงานเมื่อไม่เข้าเงือนไขในข้อ2
-    else if (mois_state == 0 && moisture > MAX_MOISTURE && cw == 0 && ccw == 0) // หากเซนเซอร์ตรวจจับความชื้นภายในดินตวจจับได้ว่าค่าความชื้นภายในดินมีค่าเกินกว่าที่กำหนดให้ทำการสั่งการให้มอเตอร์ตัวหนึ่งหมุนตามเข็มนาฬิกา เป็นเวลา 20 วินาที
+    if (mois_state == 0 && moisture > MAX_MOISTURE && cw == 0 && ccw == 0) // หากเซนเซอร์ตรวจจับความชื้นภายในดินตวจจับได้ว่าค่าความชื้นภายในดินมีค่าเกินกว่าที่กำหนดให้ทำการสั่งการให้มอเตอร์ตัวหนึ่งหมุนตามเข็มนาฬิกา เป็นเวลา 20 วินาที
     {
       mois_state = 1;
       cw = 20;
@@ -183,11 +184,6 @@ void loop()
       motorStop();
       motorState = false;
     }
-
-    // clear value
-    timer = 0;
-    lux = 0;
-    moisture = 0;
   }
 }
 
