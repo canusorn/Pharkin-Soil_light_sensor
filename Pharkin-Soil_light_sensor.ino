@@ -8,6 +8,7 @@
   V3 - cw มอเตอร์หมุนตามเข็ม
   V4 - ccw มอเตอร์หมุนทวนเข็ม
   V5 - มอเตอร์หมุน(ทั้งสองทาง)
+  V6 - เซนเซอร์น้ำฝน
 
   light sensor:
   VCC  <-> 3V3
@@ -52,6 +53,7 @@
 #define MOTOR1 D6 // ขามอเตอร์ IN1 IN3
 #define MOTOR2 D7 // ขามอเตอร์ IN2 IN4
 #define RELAY D5  // ขาต่อรีเลย์คุมปั้มน้ำ
+#define RAIN D4   // ขาต่อเซนเซอร์ฝน
 
 // Uncomment your board, or configure a custom board in Settings.h
 //#define USE_SPARKFUN_BLYNK_BOARD
@@ -71,7 +73,7 @@ uint16_t moisture;
 bool relayOn = false;            // flag relay on
 bool motorState = false;         // flag motor state
 uint8_t cw, ccw;                 // timer to control motor
-uint8_t light_state, mois_state; // state
+uint8_t light_state, mois_state, rain_state; // state
 uint8_t timer;
 
 void setup()
@@ -126,6 +128,20 @@ void loop()
       Serial.println("Relay Off");
     }
     Blynk.virtualWrite(V2, relayOn);
+
+    // เงื่อนไขเพิ่มเติมจากเซนเซอร์น้ำฝน
+    if (digitalRead(RAIN) && cw == 0 && ccw == 0 && rain_state) { //ฝนไม่ตก หากเซนเซอร์ตรวจจับน้ำฝนตรวจจับได้ว่าน้ำที่ตกกระทบลงบนแผ่นเซนเซอร์มีค่าน้อยกว่ากำหนด ก็จะทำการสั่งการให้มอเตอร์ตัวหนึ่งหมุนตามเข็มนาฬิกาและมอเตอร์อีกตัวหนึ่งหมุนทวนเข็มนาฬิกาเป็นระยะเวลาที่กำหนด โดยที่มอเตอร์ทั้ง 2 ตัวนั้นต้องหมุนไปพร้อมๆกัน เพื่อเป็นการเปิดสแลนป้องกันฝน
+      rain_state = 0;
+      cw = 20;
+      Serial.println("Rain not detect -> motor : Clockwise  Time:" + String(cw) + " sec");
+      Blynk.virtualWrite(V6, 0);
+    }
+    else if (!digitalRead(RAIN) && cw == 0 && ccw == 0 && !rain_state) { // ฝนตก หากเซนเซอร์ตรวจจับน้ำฝนตรวจจับได้ว่าน้ำที่ตกกระทบลงบนแผ่นเซนเซอร์มีค่ามากกว่ากำหนดแล้วให้ทำการสั่งการให้มอเตอร์ที่แต่เดิมหมุนตามทวนเข็มนาฬิกาเปลี่ยนไปเป็นหมุนตามเข็มนาฬิกาและมอเตอร์ที่แต่เดิมหมุนตามเข็มนาฬิกาเปลี่ยนไปเป็นหมุนทวนเข็มนาฬิกาโดยที่มอเตอร์ทั้ง 2 หมุนเป็นระยะเวลาตามที่กำหนดพร้อมๆ กัน เพื่อเป็นการปิดสแลนป้องกันฝน
+      rain_state = 1;
+      ccw = 20;
+      Serial.println("Rain detect! -> motor : Clockwise  Time:" + String(ccw) + " sec");
+      Blynk.virtualWrite(V6, 1);
+    }
 
     //ข้อ2 เงื่อนไขจากแสง
     if (light_state == 0 && lux > MAX_LUX && cw == 0 && ccw == 0) //ตรวจจับได้ว่าค่าความเข้มแสงมีค่าเกินกว่าช่วงที่กำหนดไว้ให้ทำการสั่งการให้มอเตอร์ตัวหนึ่งหมุนตามเข็มนาฬิกาและมอเตอร์อีกตัวหนึ่งหมุนทวนเข็มนาฬิกาเป็นเวลา 20 วินาที
